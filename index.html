@@ -1176,5 +1176,73 @@ function todayObj(){
   el.btnStop.onclick = stopTimer;
 });
 </script>
+<!-- 加入 Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+  // 这里换成你自己的 Firebase 配置（复制自控制台的那段）
+  const firebaseConfig = {
+    apiKey: "AIzaSyBjcUD9nAGxg5mgTA2v7mMcfD5dcWU9nTw",
+    authDomain: "haoqing-af64d.firebaseapp.com",
+    projectId: "haoqing-af64d",
+    storageBucket: "haoqing-af64d.firebasestorage.app",
+    messagingSenderId: "1025278981441",
+    appId: "1:1025278981441:web:edaf5f1aa9446246c0ddc0"
+  };
+
+  // 初始化 Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // 匿名登录
+  auth.signInAnonymously().catch(console.error);
+
+  // 示例：存储和读取“豪情值”
+  async function saveHaoqing(value){
+    const user = auth.currentUser;
+    if(!user) return;
+    await db.collection('users').doc(user.uid).collection('data')
+      .doc('haoqing')
+      .set({ value: value, updatedAt: Date.now() });
+  }
+
+  async function loadHaoqing(){
+    return new Promise(resolve=>{
+      auth.onAuthStateChanged(async user=>{
+        if(!user){ resolve(0); return; }
+        const doc = await db.collection('users').doc(user.uid).collection('data')
+          .doc('haoqing').get();
+        resolve(doc.exists ? doc.data().value : 0);
+      });
+    });
+  }
+
+  // 页面加载完后自动初始化
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    const el = document.getElementById('hq');
+    let value = await loadHaoqing();
+    el.textContent = value;
+
+    document.getElementById('hq-add').onclick = async ()=>{
+      value++;
+      el.textContent = value;
+      await saveHaoqing(value);
+    };
+    document.getElementById('hq-sub').onclick = async ()=>{
+      value = Math.max(0, value-1);
+      el.textContent = value;
+      await saveHaoqing(value);
+    };
+  });
+</script>
+
+<div>豪情值：<span id="hq">0</span></div>
+<button id="hq-add">+1</button>
+<button id="hq-sub">-1</button>
+
 </body>
+
 </html>
